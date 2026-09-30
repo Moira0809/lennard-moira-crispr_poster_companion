@@ -2,6 +2,12 @@
 
 A mobile-first website that goes with the CRISPR-Cas poster (reached through a QR code), plus a separate editor page.
 
+## Our links
+
+- **Website (for the QR code):** https://moira0809.github.io/lennard-moira-crispr_poster_companion/
+- **Editor:** https://moira0809.github.io/lennard-moira-crispr_poster_companion/admin.html
+- **GitHub repository:** https://github.com/Moira0809/lennard-moira-crispr_poster_companion
+
 ```
 index.html        public page (what visitors see)
 admin.html        editor (text, images, videos, authors, references, QR code)
@@ -38,6 +44,7 @@ Notes
 - `admin.html` is publicly reachable, but nobody can change anything without a token. The token is stored only in your own browser.
 - If several people edit, click **Load latest from GitHub** before you start so you don't overwrite each other's work.
 - Keep videos small: MP4 (H.264), ideally under 20 MB (GitHub's limit is 100 MB per file). `.mov` often won't play on Android.
+- `.avi` files (e.g. time-lapses from Fiji) are converted to MP4 automatically when you choose them in the editor. This happens in your browser, so keep the tab open until it's done. The first time, the converter needs to download about 30 MB. Very large AVIs (over 1.5 GB) can't be converted in the browser. Use HandBrake (https://handbrake.fr, preset "Fast 1080p30") for those.
 - Leaving a media path empty shows an "Image/Video coming soon" placeholder.
 - Removing media in the editor only removes it from the page. The file stays in the repo's `media/` folder.
 - Before printing the poster, download the QR code in the **Publish & QR** tab and test it with several phones.

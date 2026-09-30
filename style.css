@@ -154,6 +154,40 @@ p { margin: 0 0 0.8em; }
 }
 .exp-next a.next { border-color: var(--x); color: var(--x); box-shadow: 0 0 14px -4px var(--x-glow); }
 
+/* R code */
+.code-list { display: grid; gap: 0.8rem; margin-top: 1rem; }
+.code-block { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.code-block[open] { border-color: var(--x); box-shadow: 0 0 16px -8px var(--x-glow); }
+.code-block summary {
+  display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 10px 16px; cursor: pointer; list-style: none;
+  font-weight: 600;
+}
+.code-block summary::-webkit-details-marker { display: none; }
+.code-block summary::after { content: "+"; margin-left: auto; font-size: 1.3rem; color: var(--x); line-height: 1; }
+.code-block[open] summary::after { content: "−"; }
+.code-lang {
+  flex: none; font: 700 0.75rem/1 var(--sans); color: #000; background: var(--x); border-radius: 6px; padding: 5px 7px;
+}
+.code-title { min-width: 0; }
+.code-desc { padding: 0 16px; font-size: 0.93rem; color: var(--ink-2); }
+.code-tools { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 0; }
+.code-tools button {
+  font: 600 0.85rem var(--sans); color: var(--x); background: transparent; border: 1px solid var(--x);
+  border-radius: 999px; padding: 8px 14px; min-height: 40px; cursor: pointer;
+}
+.code-block pre {
+  margin: 12px 0 0; padding: 14px 16px; background: #050507; border-top: 1px solid var(--line);
+  overflow-x: auto; max-height: 70vh; -webkit-overflow-scrolling: touch;
+}
+.code-block code { font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #e8e8ee; white-space: pre; tab-size: 2; }
+/* R syntax colours, from the fluorescence palette */
+.token.comment { color: #7c7c8a; font-style: italic; }
+.token.string { color: var(--gfp); }
+.token.keyword, .token.boolean { color: var(--magenta); }
+.token.number, .token.percent-operator { color: var(--farred); }
+.token.operator, .token.punctuation { color: #a9a9b3; }
+.token.ellipsis { color: var(--magenta); }
+
 /* Methods */
 .methods { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
 .method {

@@ -35,6 +35,14 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <div id="busy" class="busy" hidden>
+    <div class="busy-box" role="alertdialog" aria-live="polite">
+      <strong id="busy-title"></strong>
+      <progress id="busy-bar" max="1"></progress>
+      <span id="busy-note" class="hint"></span>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
   <script src="common.js"></script>
   <script src="admin.js"></script>

@@ -31,7 +31,15 @@
       newItem: () => ({ title: 'New method', what: '', why: '', media: [] }), fields: METHOD_FIELDS },
     T('galleryHeading', 'Gallery heading'),
     A('galleryIntro', 'Gallery intro text', { rows: 2, hint: MD_HINT }),
-    { key: 'media', type: 'list', label: 'Gallery: images / videos', itemLabel: 'Media', titleKey: 'caption', itemType: 'media', newItem: newMedia }
+    { key: 'media', type: 'list', label: 'Gallery: images / videos', itemLabel: 'Media', titleKey: 'caption', itemType: 'media', newItem: newMedia },
+    A('codeIntro', 'Intro text for the R code (optional)', { rows: 2, hint: MD_HINT }),
+    { key: 'code', type: 'list', label: 'R code', itemLabel: 'Script', titleKey: 'title',
+      newItem: () => ({ title: 'New R script', description: '', code: '' }),
+      fields: [
+        T('title', 'Script name', { hint: 'e.g. "Quantification of GFP intensity"' }),
+        A('description', 'What does this script do? (optional)', { rows: 2, hint: MD_HINT }),
+        { key: 'code', label: 'R code', type: 'code' }
+      ] }
   ];
 
   const TABS_BEFORE = [
@@ -142,6 +150,35 @@
     }
   }
 
+  // Monospace code box: Tab inserts spaces, and code can be loaded from a .R file.
+  function codeField(obj, f) {
+    const wrap = document.createElement('div');
+    wrap.className = 'field';
+    const id = 'f' + Math.random().toString(36).slice(2);
+    wrap.innerHTML = `<div class="inline" style="justify-content:space-between"><label for="${id}">${f.label}</label>
+        <label class="btn small upload-label">Load from .R file…<input type="file" accept=".R,.r,.Rmd,.txt,text/plain"></label></div>
+      <textarea id="${id}" class="code" rows="14" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="# paste your R code here"></textarea>
+      <span class="hint">Paste the code exactly as you used it. Visitors can copy it or download it as a .R file.</span>`;
+    const ta = wrap.querySelector('textarea');
+    ta.value = obj[f.key] ?? '';
+    const set = v => { obj[f.key] = v; changed(); };
+    ta.addEventListener('input', () => set(ta.value));
+    ta.addEventListener('keydown', e => {
+      if (e.key !== 'Tab' || e.shiftKey) return;
+      e.preventDefault();
+      ta.setRangeText('  ', ta.selectionStart, ta.selectionEnd, 'end');
+      set(ta.value);
+    });
+    wrap.querySelector('input[type=file]').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      ta.value = (await file.text()).replace(/\r\n/g, '\n');
+      set(ta.value);
+      toast(`Loaded ${file.name}`);
+    });
+    return wrap;
+  }
+
   function selectField(obj, f) {
     const wrap = document.createElement('div');
     wrap.className = 'field';
@@ -210,6 +247,7 @@
         for (const sub of f.fields) {
           if (sub.type === 'list') renderList(card, item, sub);
           else if (sub.type === 'photo') card.append(photoEditor(item, sub));
+          else if (sub.type === 'code') card.append(codeField(item, sub));
           else card.append(textField(item, sub, () => { head.textContent = title(); }));
         }
       }
@@ -233,7 +271,7 @@
   function thumbHTML(type, src) {
     if (!src) return `<div class="thumb">No file yet</div>`;
     const s = esc(resolveSrc(src));
-    return `<div class="thumb">${type === 'video' ? `<video src="${s}" muted preload="metadata"></video>` : `<img src="${s}" alt="">`}</div>`;
+    return `<div class="thumb">${type === 'video' ? `<video src="${s}#t=0.1" muted playsinline preload="metadata"></video>` : `<img src="${s}" alt="">`}</div>`;
   }
 
   function mediaEditor(m, label, onTitle) {
@@ -249,7 +287,7 @@
                 <option value="image" ${m.type !== 'video' ? 'selected' : ''}>Image</option>
                 <option value="video" ${m.type === 'video' ? 'selected' : ''}>Video</option>
               </select>
-              <label class="btn small upload-label">Choose file…<input type="file" accept="image/*,video/mp4,video/webm,video/quicktime"></label>
+              <label class="btn small upload-label">Choose file…<input type="file" accept="image/*,video/mp4,video/webm,video/quicktime,video/x-msvideo,.avi"></label>
               ${m.src ? '<button class="btn small danger" data-clear>Clear</button>' : ''}
             </div>
             <div class="field"><input type="text" data-k="src" value="${esc(m.src)}" placeholder="media/filename.mp4 (empty = placeholder)" aria-label="File path"></div>
@@ -264,9 +302,18 @@
         if (el.dataset.k !== 'caption' && el.dataset.k !== 'alt') { changed(); render(); } else changed();
       }));
       box.querySelector('[data-clear]')?.addEventListener('click', () => { m.src = ''; changed(); render(); });
-      box.querySelector('input[type=file]').addEventListener('change', e => {
-        const file = e.target.files[0];
+      box.querySelector('input[type=file]').addEventListener('change', async e => {
+        let file = e.target.files[0];
         if (!file) return;
+        if (needsConversion(file)) {
+          try {
+            file = await convertToMp4(file);
+            toast(`Converted ✓ ${file.name} (${(file.size / 1048576).toFixed(1)} MB)`);
+          } catch (err) {
+            toast(`${err?.message || err} You can also convert it yourself with HandBrake (see README).`, true);
+            return;
+          }
+        }
         m.src = addPendingFile(file);
         m.type = file.type.startsWith('video') || Site.isVideo(file.name) ? 'video' : 'image';
         changed(); render();
@@ -295,6 +342,84 @@
     };
     render();
     return box;
+  }
+
+  // ---------- AVI → MP4 (browsers can't play AVI) ----------
+  // Converted inside the browser with ffmpeg.wasm, loaded from the CDN the first time it is needed.
+  // The library starts its worker as an ES module, so the worker and core use the ESM builds.
+  const FF_CDN = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist';
+  const CORE_CDN = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
+  let ffmpegPromise = null;
+
+  function needsConversion(file) {
+    return /\.avi$/i.test(file.name) || /x-msvideo|\/avi/.test(file.type);
+  }
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res;
+      s.onerror = () => rej(new Error('Could not load the video converter. Check your internet connection.'));
+      document.head.append(s);
+    });
+  }
+
+  function getFFmpeg() {
+    ffmpegPromise ??= (async () => {
+      if (!window.FFmpegWASM) await loadScript(`${FF_CDN}/umd/ffmpeg.js`);
+      const ff = new FFmpegWASM.FFmpeg();
+      // A same-origin worker is required; this tiny module just imports the real worker from the CDN.
+      const worker = URL.createObjectURL(new Blob([`import "${FF_CDN}/esm/worker.js";`], { type: 'text/javascript' }));
+      await ff.load({ classWorkerURL: worker, coreURL: `${CORE_CDN}/ffmpeg-core.js`, wasmURL: `${CORE_CDN}/ffmpeg-core.wasm` });
+      return ff;
+    })().catch(err => { ffmpegPromise = null; throw err; });
+    return ffmpegPromise;
+  }
+
+  async function convertToMp4(file) {
+    if (file.size > 1.5 * 1024 ** 3) throw new Error(`${file.name} is too large to convert in the browser (over 1.5 GB).`);
+    let ff, onProgress;
+    try {
+      busy(`Converting ${file.name} to MP4`, ffmpegPromise ? 'Starting…' : 'Loading the converter (about 30 MB, only the first time)…', null);
+      try { ff = await getFFmpeg(); }
+      catch (err) { throw new Error(`Could not start the video converter (${err?.message || err}).`); }
+      onProgress = ({ progress }) =>
+        busy(null, 'Converting… please keep this tab open.', Math.min(Math.max(progress, 0), 1));
+      ff.on('progress', onProgress);
+      busy(null, 'Reading the file…', null);
+      await ff.writeFile('in.avi', new Uint8Array(await file.arrayBuffer()));
+      const code = await ff.exec([
+        '-i', 'in.avi',
+        '-an',                                              // time-lapses have no sound
+        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+        '-pix_fmt', 'yuv420p',                              // plays on every phone
+        '-vf', 'scale=trunc(min(1920\\,iw)/2)*2:-2',        // max 1920 px wide, even dimensions
+        '-movflags', '+faststart',                          // starts playing before fully loaded
+        'out.mp4'
+      ]);
+      if (code !== 0) throw new Error(`Could not convert ${file.name}.`);
+      const data = await ff.readFile('out.mp4');
+      return new File([data], file.name.replace(/\.avi$/i, '') + '.mp4', { type: 'video/mp4' });
+    } finally {
+      if (ff) {
+        if (onProgress) ff.off('progress', onProgress);
+        await ff.deleteFile('in.avi').catch(() => {});
+        await ff.deleteFile('out.mp4').catch(() => {});
+      }
+      busy(false);
+    }
+  }
+
+  // Blocking progress overlay: busy(title, note, progress 0..1 | null) or busy(false) to hide.
+  function busy(title, note, progress) {
+    const el = $('#busy');
+    if (title === false) { el.hidden = true; return; }
+    el.hidden = false;
+    if (title) $('#busy-title').textContent = title;
+    if (note) $('#busy-note').textContent = note;
+    const bar = $('#busy-bar');
+    if (progress == null) bar.removeAttribute('value');
+    else bar.value = progress;
   }
 
   function addPendingFile(file) {

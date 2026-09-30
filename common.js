@@ -49,7 +49,8 @@ const Site = {
   newExperiment(nav = 'New experiment', accent = 'farred') {
     return {
       nav, title: nav, accent, intro: '',
-      methods: [], galleryHeading: 'From the microscope', galleryIntro: '', media: []
+      methods: [], galleryHeading: 'From the microscope', galleryIntro: '', media: [],
+      codeIntro: '', code: []
     };
   },
 

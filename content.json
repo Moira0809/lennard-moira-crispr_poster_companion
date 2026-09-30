@@ -40,7 +40,12 @@
           "what": "What we did: microscope, objective, channels, time-lapse interval.",
           "why": "Why imaging was the right readout for this experiment.",
           "media": [
-            { "type": "video", "src": "", "caption": "Time-lapse of … (placeholder)", "alt": "" }
+            {
+              "type": "video",
+              "src": "",
+              "caption": "Time-lapse of … (placeholder)",
+              "alt": ""
+            }
           ]
         },
         {
@@ -53,8 +58,26 @@
       "galleryHeading": "From the microscope",
       "galleryIntro": "Images and videos from the CRISPR experiment. Tap an image to enlarge it.",
       "media": [
-        { "type": "video", "src": "", "caption": "Video 1 – placeholder caption.", "alt": "" },
-        { "type": "image", "src": "", "caption": "Figure 1 – placeholder caption.", "alt": "" }
+        {
+          "type": "video",
+          "src": "",
+          "caption": "Video 1 – placeholder caption.",
+          "alt": ""
+        },
+        {
+          "type": "image",
+          "src": "",
+          "caption": "Figure 1 – placeholder caption.",
+          "alt": ""
+        }
+      ],
+      "codeIntro": "The R code we used to process and analyse the data of this experiment.",
+      "code": [
+        {
+          "title": "Quantification of the microscopy data",
+          "description": "Reads the measurements exported from Fiji and compares the conditions.",
+          "code": "# Placeholder: replace with your own script\nlibrary(ggplot2)\n\ndata <- read.csv(\"crispr_measurements.csv\")\n\nggplot(data, aes(x = condition, y = intensity)) +\n  geom_boxplot() +\n  theme_minimal()\n"
+        }
       ]
     },
     {
@@ -80,21 +103,58 @@
           "what": "What we did: how the response was recorded and measured.",
           "why": "Why this readout shows the effect of the light stimulation.",
           "media": [
-            { "type": "video", "src": "", "caption": "Response to light stimulation (placeholder)", "alt": "" }
+            {
+              "type": "video",
+              "src": "",
+              "caption": "Response to light stimulation (placeholder)",
+              "alt": ""
+            }
           ]
         }
       ],
       "galleryHeading": "From the microscope",
       "galleryIntro": "Images and videos from the optogenetics experiment. Tap an image to enlarge it.",
       "media": [
-        { "type": "video", "src": "", "caption": "Video 1 – placeholder caption.", "alt": "" },
-        { "type": "image", "src": "", "caption": "Figure 1 – placeholder caption.", "alt": "" }
+        {
+          "type": "video",
+          "src": "",
+          "caption": "Video 1 – placeholder caption.",
+          "alt": ""
+        },
+        {
+          "type": "image",
+          "src": "",
+          "caption": "Figure 1 – placeholder caption.",
+          "alt": ""
+        }
+      ],
+      "codeIntro": "The R code we used to process and analyse the data of this experiment.",
+      "code": [
+        {
+          "title": "Analysis of the light response",
+          "description": "Measures the response before and after light stimulation.",
+          "code": "# Placeholder: replace with your own script\ndata <- read.csv(\"opto_measurements.csv\")\n\nsummary(data)\nt.test(response ~ light, data = data)\n"
+        }
       ]
     }
   ],
   "authors": [
-    { "name": "Moira", "role": "Role in the project", "affiliation": "University of Zurich", "email": "", "photo": "", "bio": "" },
-    { "name": "Lennard", "role": "Role in the project", "affiliation": "University of Zurich", "email": "", "photo": "", "bio": "" }
+    {
+      "name": "Moira",
+      "role": "Role in the project",
+      "affiliation": "University of Zurich",
+      "email": "",
+      "photo": "",
+      "bio": ""
+    },
+    {
+      "name": "Lennard",
+      "role": "Role in the project",
+      "affiliation": "University of Zurich",
+      "email": "",
+      "photo": "",
+      "bio": ""
+    }
   ],
   "references": [
     {

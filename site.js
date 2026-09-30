@@ -17,7 +17,7 @@
     const alt = esc(m.alt || m.caption || '');
     if (type === 'video') {
       // "#t=0.1" makes iPhones show the first frame instead of a black box
-      const vsrc = m.src.includes('#') || m.src.startsWith('blob:') ? m.src : `${m.src}#t=0.1`;
+      const vsrc = m.src.includes('#') ? m.src : `${m.src}#t=0.1`;
       return `<figure class="media"><video src="${esc(vsrc)}" controls playsinline preload="metadata" muted></video>${cap}</figure>`;
     }
     return `<figure class="media"><button class="zoom" data-src="${esc(m.src)}" data-cap="${esc(m.caption || '')}" aria-label="Enlarge image"><img src="${esc(m.src)}" alt="${alt}" ${eager ? '' : 'loading="lazy"'}></button>${cap}</figure>`;
@@ -80,6 +80,21 @@
           <div class="prose">${md(e.galleryIntro)}</div>
           <div class="gallery">${(e.media || []).map(x => mediaHTML(x)).join('')}</div>` : ''}
 
+          ${(e.code || []).length ? `
+          <h3 class="sub">Data analysis in R</h3>
+          <div class="prose">${md(e.codeIntro)}</div>
+          <div class="code-list">${e.code.map(c => `
+            <details class="code-block">
+              <summary><span class="code-lang">R</span><span class="code-title">${esc(c.title || 'R script')}</span></summary>
+              ${c.description ? `<div class="prose code-desc">${md(c.description)}</div>` : ''}
+              <div class="code-tools">
+                <button type="button" data-copy>Copy code</button>
+                <button type="button" data-download="${esc(Site.slug(c.title) || 'script')}.R">Download .R</button>
+              </div>
+              <pre><code class="language-r">${esc(c.code || '# (code coming soon)')}</code></pre>
+            </details>`).join('')}
+          </div>` : ''}
+
           <nav class="exp-next" aria-label="Continue">
             ${exps[i + 1] ? `<a class="next accent-${accent(exps[i + 1])}" href="#${Site.expId(exps[i + 1], i + 1)}">Next: ${esc(exps[i + 1].title || exps[i + 1].nav)} →</a>` : ''}
             <a href="#top">↑ Back to top</a>
@@ -104,6 +119,7 @@
     $('#refs').innerHTML = (c.references || []).map(r => `
       <li>${inline(r.text)}${r.url ? ` <a class="ref-link" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url.replace(/^https?:\/\/(dx\.)?/, ''))}</a>` : ''}</li>`).join('');
 
+    if (window.Prism) Prism.highlightAllUnder($('#experiments'));
     watchSections();
   }
 
@@ -139,6 +155,32 @@
       lb.showModal();
     } else if (e.target === lb || e.target.closest('.lb-close')) {
       lb.close();
+    }
+  });
+
+  // R code: copy to clipboard / download as .R file
+  document.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-copy], [data-download]');
+    if (!btn) return;
+    const code = btn.closest('.code-block').querySelector('code').textContent;
+    if (btn.hasAttribute('data-copy')) {
+      let ok = false;
+      try { await navigator.clipboard.writeText(code); ok = true; }
+      catch {
+        // fallback for older phones / browsers without clipboard access
+        const t = Object.assign(document.createElement('textarea'), { value: code });
+        t.style.cssText = 'position:fixed;opacity:0';
+        document.body.append(t); t.select();
+        try { ok = document.execCommand('copy'); } catch {}
+        t.remove();
+      }
+      btn.textContent = ok ? 'Copied ✓' : 'Copy failed';
+      setTimeout(() => { btn.textContent = 'Copy code'; }, 1800);
+    } else {
+      const url = URL.createObjectURL(new Blob([code + '\n'], { type: 'text/plain' }));
+      const a = Object.assign(document.createElement('a'), { href: url, download: btn.dataset.download });
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
   });
 
